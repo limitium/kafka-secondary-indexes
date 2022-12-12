@@ -1,0 +1,11 @@
+spring:
+  application.name: "instrument.normalizer.receiver"
+
+kafka:
+  bootstrap:
+    servers: localhost:9092
+
+#Must be taken from config server and merged into instrument-keeper.server
+instrument-keeper:
+  host: localhost
+  port: 9999
