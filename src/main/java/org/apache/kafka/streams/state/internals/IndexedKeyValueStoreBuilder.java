@@ -18,7 +18,7 @@ public class IndexedKeyValueStoreBuilder<K, V> extends KeyValueStoreBuilder<K, V
     private final HashMap<String, Function<V, String>> uniqIndexes;
     private final HashMap<String, Function<V, String>> nonUniqIndexes;
 
-    public IndexedKeyValueStoreBuilder(KeyValueBytesStoreSupplier storeSupplier, Serde keySerde, Serde valueSerde, Time time) {
+    public IndexedKeyValueStoreBuilder(KeyValueBytesStoreSupplier storeSupplier, Serde<K> keySerde, Serde<V> valueSerde, Time time) {
         super(storeSupplier, keySerde, valueSerde, time);
         this.storeSupplier = storeSupplier;
         this.uniqIndexes = new HashMap<>();
@@ -26,10 +26,12 @@ public class IndexedKeyValueStoreBuilder<K, V> extends KeyValueStoreBuilder<K, V
     }
 
     /**
-     * Add a new uniq index based on generated {@code keyGenerator} key, with {@code indexName} name
-     * @param indexName
+     * Add a new uniq index based on generated {@code keyGenerator} <b>not null</b> key, with {@code indexName} name.
+     *
+     *
+     * @param indexName must be uniq and used with {@link IndexedKeyValueStore#getUniqueKey(String, String)}
      * @param keyGenerator converts value into the index key, the same key should be used for value extraction via {@link IndexedMeteredKeyValueStore#getUnique(String, String)}
-     * @return
+     * @return self
      */
     public IndexedKeyValueStoreBuilder<K, V> addUniqIndex(String indexName, Function<V, String> keyGenerator) {
         Objects.requireNonNull(indexName, "indexName cannot be null");
@@ -46,9 +48,9 @@ public class IndexedKeyValueStoreBuilder<K, V> extends KeyValueStoreBuilder<K, V
     /**
      * Add a new non uniq index based on generated {@code keyGenerator} key, with {@code indexName} name
      *
-     * @param indexName
+     * @param indexName must be uniq and used with {@link IndexedKeyValueStore#getNonUnique(String, String)}
      * @param keyGenerator converts value into the index key, the same key should be used for value extraction via {@link IndexedMeteredKeyValueStore#getNonUnique(String, String)} (String, String)}
-     * @return
+     * @return self
      */
     public IndexedKeyValueStoreBuilder<K, V> addNonUniqIndex(String indexName, Function<V, String> keyGenerator) {
         Objects.requireNonNull(indexName, "indexName cannot be null");
@@ -76,8 +78,8 @@ public class IndexedKeyValueStoreBuilder<K, V> extends KeyValueStoreBuilder<K, V
 
     @Override
     public IndexedKeyValueStoreBuilder<K, V> withCachingEnabled() {
-         super.withCachingEnabled();
-         return this;
+        super.withCachingEnabled();
+        return this;
     }
 
     @Override

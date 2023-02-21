@@ -25,12 +25,14 @@ public class IndexedNonUniqStoreTest {
     protected KeyValueStoreTestDriver<Integer, String> driver;
 
     @BeforeEach
+    @SuppressWarnings("unchecked")
     public void setUp() {
         driver = KeyValueStoreTestDriver.create(Integer.class, String.class);
         context = (InternalMockProcessorContext<Integer, String>) driver.context();
         context.setTime(10);
 
         store = createStore(context);
+        store.rebuildIndexes();
     }
 
     private IndexedKeyValueStore<Integer, String> createStore(InternalMockProcessorContext<Integer, String> context) {
@@ -44,7 +46,6 @@ public class IndexedNonUniqStoreTest {
         IndexedKeyValueStore<Integer, String> store = builder.build();
 
         store.init((StateStoreContext) context, store);
-        store.rebuildIndexes();
         return store;
     }
 
@@ -78,6 +79,7 @@ public class IndexedNonUniqStoreTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void shouldRebuildIndexOnRestore() {
         store.close();
 

@@ -88,6 +88,9 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
         lock.writeLock().lock();
 
         try {
+            if (indexesBuilt) { //No reason to rebuild in each Processor
+                return;
+            }
             uniqIndexesData.values().forEach(Map::clear);
             nonUniqIndexesData.values().forEach(Map::clear);
 
@@ -110,6 +113,20 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
 
     @Override
     public V getUnique(String indexName, String indexKey) {
+        lock.readLock().lock();
+        try {
+            K key = getUniqueKey(indexName, indexKey);
+            if(key != null) {
+                return get(key);
+            }
+            return null;
+        }finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    @Override
+    public K getUniqueKey(String indexName, String indexKey) {
         Objects.requireNonNull(indexName, "indexName cannot be null");
         Objects.requireNonNull(indexKey, "indexKey cannot be null");
 
@@ -118,12 +135,7 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
             throw new RuntimeException("Indexes were not built, call IndexedKeyValueStore.rebuildIndexes() from Processor#init() method");
         }
         try {
-            K key = maybeMeasureLatency(() -> lookupUniqKey(indexName, indexKey), time, lookupUniqIndexSensor);
-            if (key == null) {
-                return null;
-            }
-
-            return get(key);
+            return maybeMeasureLatency(() -> lookupUniqKey(indexName, indexKey), time, lookupUniqIndexSensor);
         } finally {
             lock.readLock().unlock();
         }
@@ -149,11 +161,12 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
 
     @Override
     public void put(K key, V value) {
+        Objects.requireNonNull(key, "key cannot be null");
         lock.writeLock().lock();
         try {
-            super.put(key, value);
             maybeMeasureLatency(() -> updateUniqIndexes(key, value), time, updateUniqIndexSensor);
             maybeMeasureLatency(() -> updateNonUniqIndexes(key, value), time, updateNonUniqIndexSensor);
+            super.put(key, value);
         } finally {
             lock.writeLock().unlock();
         }
@@ -226,23 +239,30 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
         });
     }
 
-    private boolean insertNonUniqKey(Map<String, Set<K>> indexData, String indexKey, Bytes key) {
+    private void insertNonUniqKey(Map<String, Set<K>> indexData, String indexKey, Bytes key) {
         if (!indexData.containsKey(indexKey)) {
             indexData.put(indexKey, new HashSet<>());
         }
-        return indexData.get(indexKey).add(keySerde.deserializer().deserialize(null, key.get()));
+        indexData.get(indexKey).add(keySerde.deserializer().deserialize(null, key.get()));
     }
 
     private void updateUniqIndexes(K key, V value) {
+
+        //2N complexity vs dirty indexes and revert changes
         uniqIndexesData.forEach((indexName, indexData) -> {
             String indexKey = generateIndexKey(uniqIndexes, indexName, value);
 
             logger.debug("Update uniq index `{}` with key `{}`, for {}:{}", indexName, indexKey, key, value);
 
-            K prevStoredKey = indexData.put(indexKey, key);
+            K prevStoredKey = indexData.get(indexKey);
             if (prevStoredKey != null && !key.equals(prevStoredKey)) {
                 throw new UniqKeyViolationException("Uniqueness violation of `" + indexName + "` index key:" + indexKey + ", for new key:" + key + ", old key:" + prevStoredKey + ", value:" + value);
             }
+        });
+
+        uniqIndexesData.forEach((indexName, indexData) -> {
+            String indexKey = generateIndexKey(uniqIndexes, indexName, value);
+            indexData.put(indexKey, key);
         });
     }
 

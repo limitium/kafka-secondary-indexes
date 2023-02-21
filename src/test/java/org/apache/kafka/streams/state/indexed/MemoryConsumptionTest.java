@@ -21,6 +21,7 @@ public class MemoryConsumptionTest {
     Logger logger = LoggerFactory.getLogger(MemoryConsumptionTest.class);
 
     @Test
+    @SuppressWarnings("unchecked")
     void inserts5kk() {
         KeyValueStoreTestDriver<Long, String> driver = KeyValueStoreTestDriver.create(Long.class, String.class);
         InternalMockProcessorContext<Long, String> context = (InternalMockProcessorContext<Long, String>) driver.context();
@@ -33,7 +34,7 @@ public class MemoryConsumptionTest {
 
                     @Override
                     public KeyValueStore<Bytes, byte[]> get() {
-                        return new KeyValueStore<Bytes, byte[]>() {
+                        return new KeyValueStore<>() {
                             @Override
                             public void put(Bytes key, byte[] value) {
 
@@ -96,7 +97,7 @@ public class MemoryConsumptionTest {
 
                             @Override
                             public KeyValueIterator<Bytes, byte[]> all() {
-                                return new KeyValueIterator<Bytes, byte[]>() {
+                                return new KeyValueIterator<>() {
                                     @Override
                                     public void close() {
 
@@ -160,4 +161,3 @@ public class MemoryConsumptionTest {
     }
 }
 
-}|

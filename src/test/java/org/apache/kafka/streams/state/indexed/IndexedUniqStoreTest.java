@@ -18,12 +18,14 @@ public class IndexedUniqStoreTest {
     protected KeyValueStoreTestDriver<Integer, String> driver;
 
     @BeforeEach
+    @SuppressWarnings("unchecked")
     public void setUp() {
         driver = KeyValueStoreTestDriver.create(Integer.class, String.class);
         context = (InternalMockProcessorContext<Integer, String>) driver.context();
         context.setTime(10);
 
         store = createStore(context);
+        store.rebuildIndexes();
     }
 
     private IndexedKeyValueStore<Integer, String> createStore(InternalMockProcessorContext<Integer, String> context) {
@@ -32,12 +34,12 @@ public class IndexedUniqStoreTest {
                         Serdes.Integer(),
                         Serdes.String())
                 //Build uniq index based on first char
+                .addUniqIndex("idx0", (v) -> v) //another index to check consistency on uniq key violation
                 .addUniqIndex("idx", (v) -> String.valueOf(v.charAt(0)));
 
         IndexedKeyValueStore<Integer, String> store = builder.build();
 
         store.init((StateStoreContext) context, store);
-        store.rebuildIndexes();
         return store;
     }
 
@@ -62,16 +64,25 @@ public class IndexedUniqStoreTest {
     @Test
     void shouldThrowUniqKeyViolationForTheSameIndexKey() {
         store.put(1, "aa");
+        assertEquals(1, store.getUniqueKey("idx", "a"), "Failed to find object via index");
+
         assertThrows(UniqKeyViolationException.class, () -> store.put(2, "ab"));
+
+        assertEquals(1, store.getUniqueKey("idx", "a"), "Failed update, broke uniq index");
+        assertNull(store.getUniqueKey("idx0", "ab"), "Other indexes left dirty on uniq key violation");
+        assertNull(store.get(2),"Value was stored on uniq key violation");
     }
 
     @Test
     void shouldRemoveValueFromIndexOnDelete() {
         store.put(1, "aa");
         assertEquals("aa", store.getUnique("idx", "a"));
+        assertEquals(1, store.getUniqueKey("idx", "a"));
 
         store.delete(1);
-        assertNull(store.getUnique("idx", "a"));
+        assertNull(store.get(1),"Value wasn't deleted");
+        assertNull(store.getUnique("idx", "a"), "Index has deleted value");
+        assertNull(store.getUniqueKey("idx", "a"),"Index key wasn't deleted");
     }
 
     @Test
@@ -81,6 +92,7 @@ public class IndexedUniqStoreTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void shouldRebuildIndexOnRestore() {
         store.close();
 
