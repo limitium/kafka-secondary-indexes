@@ -14,11 +14,11 @@ public class StateStoreMetrics2 {
     private static final String AVG_LATENCY_DESCRIPTION_PREFIX = AVG_DESCRIPTION_PREFIX + LATENCY_DESCRIPTION;
     private static final String MAX_LATENCY_DESCRIPTION_PREFIX = MAX_DESCRIPTION_PREFIX + LATENCY_DESCRIPTION;
 
-    private static final String REBUILD_UNIQ_INDEX = "rebuild-uniq-indexes";
-    private static final String REBUILD_UNIQ_INDEX_DESCRIPTION = "rebuild secondary uniq indexes";
-    private static final String REBUILD_UNIQ_INDEX_RATE_DESCRIPTION = RATE_DESCRIPTION_PREFIX + REBUILD_UNIQ_INDEX_DESCRIPTION + RATE_DESCRIPTION_SUFFIX;
-    private static final String REBUILD_UNIQ_INDEX_AVG_LATENCY_DESCRIPTION = AVG_LATENCY_DESCRIPTION_PREFIX + REBUILD_UNIQ_INDEX_DESCRIPTION;
-    private static final String REBUILD_UNIQ_INDEX_MAX_LATENCY_DESCRIPTION = MAX_LATENCY_DESCRIPTION_PREFIX + REBUILD_UNIQ_INDEX_DESCRIPTION;
+    private static final String REBUILD_INDEX = "rebuild-indexes";
+    private static final String REBUILD_INDEX_DESCRIPTION = "rebuild secondary indexes";
+    private static final String REBUILD_INDEX_RATE_DESCRIPTION = RATE_DESCRIPTION_PREFIX + REBUILD_INDEX_DESCRIPTION + RATE_DESCRIPTION_SUFFIX;
+    private static final String REBUILD_INDEX_AVG_LATENCY_DESCRIPTION = AVG_LATENCY_DESCRIPTION_PREFIX + REBUILD_INDEX_DESCRIPTION;
+    private static final String REBUILD_INDEX_MAX_LATENCY_DESCRIPTION = MAX_LATENCY_DESCRIPTION_PREFIX + REBUILD_INDEX_DESCRIPTION;
 
     private static final String LOOKUP_UNIQ_INDEX = "lookup-uniq-index";
     private static final String LOOKUP_UNIQ_INDEX_DESCRIPTION = "lookup secondary uniq index";
@@ -39,14 +39,6 @@ public class StateStoreMetrics2 {
     private static final String REMOVE_UNIQ_INDEX_AVG_LATENCY_DESCRIPTION = AVG_LATENCY_DESCRIPTION_PREFIX + REMOVE_UNIQ_INDEX_DESCRIPTION;
     private static final String REMOVE_UNIQ_INDEX_MAX_LATENCY_DESCRIPTION = MAX_LATENCY_DESCRIPTION_PREFIX + REMOVE_UNIQ_INDEX_DESCRIPTION;
 
-
-
-    private static final String REBUILD_NON_UNIQ_INDEX = "rebuild-uniq-indexes";
-    private static final String REBUILD_NON_UNIQ_INDEX_DESCRIPTION = "rebuild secondary uniq indexes";
-    private static final String REBUILD_NON_UNIQ_INDEX_RATE_DESCRIPTION = RATE_DESCRIPTION_PREFIX + REBUILD_NON_UNIQ_INDEX_DESCRIPTION + RATE_DESCRIPTION_SUFFIX;
-    private static final String REBUILD_NON_UNIQ_INDEX_AVG_LATENCY_DESCRIPTION = AVG_LATENCY_DESCRIPTION_PREFIX + REBUILD_NON_UNIQ_INDEX_DESCRIPTION;
-    private static final String REBUILD_NON_UNIQ_INDEX_MAX_LATENCY_DESCRIPTION = MAX_LATENCY_DESCRIPTION_PREFIX + REBUILD_NON_UNIQ_INDEX_DESCRIPTION;
-
     private static final String LOOKUP_NON_UNIQ_INDEX = "lookup-uniq-index";
     private static final String LOOKUP_NON_UNIQ_INDEX_DESCRIPTION = "lookup secondary uniq index";
     private static final String LOOKUP_NON_UNIQ_INDEX_RATE_DESCRIPTION = RATE_DESCRIPTION_PREFIX + LOOKUP_NON_UNIQ_INDEX_DESCRIPTION + RATE_DESCRIPTION_SUFFIX;
@@ -66,17 +58,17 @@ public class StateStoreMetrics2 {
     private static final String REMOVE_NON_UNIQ_INDEX_AVG_LATENCY_DESCRIPTION = AVG_LATENCY_DESCRIPTION_PREFIX + REMOVE_NON_UNIQ_INDEX_DESCRIPTION;
     private static final String REMOVE_NON_UNIQ_INDEX_MAX_LATENCY_DESCRIPTION = MAX_LATENCY_DESCRIPTION_PREFIX + REMOVE_NON_UNIQ_INDEX_DESCRIPTION;
 
-    public static Sensor restoreUniqIndexSensor(final String taskId,
-                                                final String storeType,
-                                                final String storeName,
-                                                final StreamsMetricsImpl streamsMetrics) {
+    public static Sensor restoreIndexSensor(final String taskId,
+                                            final String storeType,
+                                            final String storeName,
+                                            final StreamsMetricsImpl streamsMetrics) {
         return throughputAndLatencySensor(
                 taskId, storeType,
                 storeName,
-                REBUILD_UNIQ_INDEX,
-                REBUILD_UNIQ_INDEX_RATE_DESCRIPTION,
-                REBUILD_UNIQ_INDEX_AVG_LATENCY_DESCRIPTION,
-                REBUILD_UNIQ_INDEX_MAX_LATENCY_DESCRIPTION,
+                REBUILD_INDEX,
+                REBUILD_INDEX_RATE_DESCRIPTION,
+                REBUILD_INDEX_AVG_LATENCY_DESCRIPTION,
+                REBUILD_INDEX_MAX_LATENCY_DESCRIPTION,
                 Sensor.RecordingLevel.DEBUG,
                 streamsMetrics
         );
@@ -125,23 +117,6 @@ public class StateStoreMetrics2 {
                 REMOVE_UNIQ_INDEX_RATE_DESCRIPTION,
                 REMOVE_UNIQ_INDEX_AVG_LATENCY_DESCRIPTION,
                 REMOVE_UNIQ_INDEX_MAX_LATENCY_DESCRIPTION,
-                Sensor.RecordingLevel.DEBUG,
-                streamsMetrics
-        );
-    }
-
-
-    public static Sensor restoreNonUniqIndexSensor(final String taskId,
-                                                final String storeType,
-                                                final String storeName,
-                                                final StreamsMetricsImpl streamsMetrics) {
-        return throughputAndLatencySensor(
-                taskId, storeType,
-                storeName,
-                REBUILD_NON_UNIQ_INDEX,
-                REBUILD_NON_UNIQ_INDEX_RATE_DESCRIPTION,
-                REBUILD_NON_UNIQ_INDEX_AVG_LATENCY_DESCRIPTION,
-                REBUILD_NON_UNIQ_INDEX_MAX_LATENCY_DESCRIPTION,
                 Sensor.RecordingLevel.DEBUG,
                 streamsMetrics
         );
