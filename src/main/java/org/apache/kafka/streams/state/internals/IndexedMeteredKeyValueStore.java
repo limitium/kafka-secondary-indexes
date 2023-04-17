@@ -102,6 +102,7 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
 
     @Override
     public void rebuildIndexes() {
+        long rebuildStart = System.currentTimeMillis();
         lock.writeLock().lock();
 
         try {
@@ -117,6 +118,7 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
             indexesBuilt = true;
         } finally {
             lock.writeLock().unlock();
+            logger.info("Rebuild indexes finished for {}ms", System.currentTimeMillis() - rebuildStart);
         }
     }
 
