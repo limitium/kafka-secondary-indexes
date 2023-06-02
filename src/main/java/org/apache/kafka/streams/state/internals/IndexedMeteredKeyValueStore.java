@@ -42,7 +42,6 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
     private final Map<String, NonUniqIndex<K, V>> nonUniqIndexesData = new HashMap<>();
 
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
-    private boolean indexesBuilt = false;
 
     private static class UniqIndex<K, V> {
         final String name;
@@ -106,7 +105,7 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
         lock.writeLock().lock();
 
         try {
-            if (indexesBuilt) { //No reason to rebuild in each Processor
+            if (!rebuildRequired()) {
                 return;
             }
             uniqIndexesData.values().forEach(idx -> idx.data.clear());
@@ -115,7 +114,6 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
             try (KeyValueIterator<Bytes, byte[]> kvIterator = wrapped().all()) {
                 maybeMeasureLatency(() -> rebuildIndexInternally(kvIterator), time, rebuildIndexSensor);
             }
-            indexesBuilt = true;
         } finally {
             lock.writeLock().unlock();
             logger.info("Rebuild indexes finished for {}ms", System.currentTimeMillis() - rebuildStart);
@@ -154,7 +152,7 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
         Objects.requireNonNull(indexKey, "indexKey cannot be null");
 
         lock.readLock().lock();
-        if (!indexesBuilt) {
+        if (!indexReady()) {
             throw new RuntimeException("Indexes were not built, call IndexedKeyValueStore.rebuildIndexes() from Processor#init() method");
         }
         try {
@@ -170,7 +168,7 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
         Objects.requireNonNull(indexKey, "indexKey cannot be null");
 
         lock.readLock().lock();
-        if (!indexesBuilt) {
+        if (!indexReady()) {
             throw new RuntimeException("Indexes were not built, call IndexedKeyValueStore.rebuildIndexes() from Processor#init() method");
         }
         try {
@@ -220,6 +218,27 @@ public class IndexedMeteredKeyValueStore<K, V> extends MeteredKeyValueStore<K, V
         }
     }
 
+
+    private final Set<String> calledProcessors = new HashSet<>();
+
+    private boolean rebuildRequired() {
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        StackTraceElement processor = stackTrace[3];
+
+        // Rebuild indexes only at first processor initialization in the topology
+        // Sequential activation of processor on the same store: activeTask -> standByTask -> activeTask
+        if (calledProcessors.contains(processor.getClassName()) || calledProcessors.size() == 0) {
+            calledProcessors.clear();
+            calledProcessors.add(processor.getClassName());
+            return true;
+        }
+        calledProcessors.add(processor.getClassName());
+        return false;
+    }
+
+    private boolean indexReady() {
+        return calledProcessors.size() > 0;
+    }
 
     private K lookupUniqKey(String indexName, String indexKey) {
         UniqIndex<K, V> index = uniqIndexesData.get(indexName);

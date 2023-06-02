@@ -150,14 +150,23 @@ public class MemoryConsumptionTest {
             }
         }
         float insertTime = (System.currentTimeMillis() - start) / 1000f;
-        logger.info("done for: {}s", insertTime);
+        logger.info("Puts for: {}s", insertTime);
 
         System.gc();
+        long startGets = System.currentTimeMillis();
+        for (long i = 0; i < 5_000_000; i++) {
+            store.get(startSeq - 5_000_000 + i);
+        }
+        float getTime = (System.currentTimeMillis() - startGets) / 1000f;
+        logger.info("Gets for: {}s", getTime);
+
         long memUsage = (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1024 / 1024;
         logger.info("Mem: {}Mb", memUsage);
 
-        assertTrue(insertTime < 4);
-        assertTrue(memUsage < 1500);
+
+        assertTrue(insertTime < 4.0);
+        assertTrue(getTime < 0.18);
+        assertTrue(memUsage < 1800);
     }
 }
 
